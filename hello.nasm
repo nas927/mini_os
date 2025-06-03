@@ -1,31 +1,30 @@
+; pour savoir les signatures et aller plus loin allez ici : https://dev.to/frosnerd/writing-my-own-boot-loader-3mld
 bits 16
 org 0x7C00              ; Adresse mémoire où le BIOS charge le bootloader
 
 start:
-    cli                 ; Désactive les interruptions
-    xor ax, ax
-    mov ds, ax          ; Initialise le segment data à 0x0000
+    xor ax, ax          ; initialise à 0 registre de 16 bits l'objet d'un prochain post
 
     mov si, message     ; Pointeur sur la chaîne à afficher
 
 .print_char:
-    lodsb               ; Charge un octet depuis [SI] dans AL, SI++
-    cmp al, 0
+    lodsb               ; Charge un octet depuis [SI] dans AL, SI++ on stock donc dans al comme argument de la fonction 0x0E
+    cmp al, 0           ; compare le contenu de al avec 0   
     je .done            ; Fin de chaîne si caractère nul
 
-    mov ah, 0x0E        ; Fonction "afficher un caractère" du BIOS
-    int 0x10            ; Appel BIOS
+    mov ah, 0x0E        ; Fonction "afficher un caractère" du BIOS : https://wiki.osdev.org/index.php?search=0x0e&title=Special%3ASearch&go=Go
+    int 0x10            ; Appel BIOS ici https://wiki.osdev.org/BIOS
 
-    jmp .print_char
+    jmp .print_char     ; jmp sauter/aller vers .print_char
 
 .done:
     hlt                 ; Boucle ici après affichage (évite de faire n'importe quoi)
-    jmp $
+    jmp $               ; $ stock l'adresse du début
 
-message db "ok fait!", 0
+message db "Bonjour linkedin!", 0
 
 ; Remplissage jusqu'à 510 octets
 times 510 - ($ - $$) db 0
 dw 0xAA55               ; Signature de boot (2 octets à la fin)
 
-times (2048 - 1) * 512 db 0
+times (2048 - 1) * 512 db 0 ; ajout d'octet en multiple de 512 pour pouvoir transformer notre .bin en .vdi
