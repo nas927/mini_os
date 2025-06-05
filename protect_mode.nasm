@@ -1,44 +1,44 @@
 get_a20_state:
-	pushf
-	push si
-	push di
+pushf  								; envoie sur la stack le flag ça sert pour les résultat de l'instruction cmp par exemple
+	push si 						; envoie sur la stack le pointer si pour le récupérer plus tard et revenir
+	push di 						; etc
 	push ds
 	push es
-	cli
+	cli								; désactive les interruptions
 
-	mov ax, 0x0000					;	0x0000:0x0500(0x00000500) -> ds:si
-	mov ds, ax
-	mov si, 0x0500
+	mov ax, 0x0000					; 0x0000:0x0500(0x00000500) -> ds:si
+	mov ds, ax						; ax -> ds
+	mov si, 0x0500					; met 0x0500 dans si	
 
-    not ax						    ;	not inverse ax +0xffff:0x0510(0x00100500) -> es:di
-	mov es, ax
-	mov di, 0x0510
+    not ax						    ; not inverse ax = 0xffff
+	mov es, ax						; ax dans es
+	mov di, 0x0510					; di = 0x0510
 
-	mov al, [ds:si]					;	save old values
-	mov byte [.BufferBelowMB], al
-	mov al, [es:di]
-	mov byte [.BufferOverMB], al
+	mov al, [ds:si]					; enregistre les anciennes valeurs contenu à l'adresse 0x00000:0x0500
+	mov byte [.BufferBelowMB], al	; enregistre al dans .BufferBelwMb
+	mov al, [es:di]					; enregistre la valeur de l'adresse 0x00000:0x0510
+	mov byte [.BufferOverMB], al    ; enregistre al dans .BufferOverMB
 
-	mov ah, 1
-	mov byte [ds:si], 0
-	mov byte [es:di], 1
-	mov al, [ds:si]
-	cmp al, [es:di]					;	check byte at address 0x0500 != byte at address 0x100500
-	jne .exit
-	dec ah
+	mov ah, 1						; place  1 à ah
+	mov byte [ds:si], 0				; met l'octet 0 = valeur de l'adresse 0x0000:0x0500
+	mov byte [es:di], 1				; met l'octet 1 = valeur de l'adresse 0xFFFF:0x0510
+	mov al, [ds:si]					; place la valeur de l'adresse 0x0000:0x0500 dans al
+	cmp al, [es:di]					; compare l'octet à l'adresse 0x0000:0x0500 et 0xFFFF:0x0510
+	jne .exit						; si c'est pas égale on va dans exit
+	dec ah							; décrémenter ah ah = ah - 1
 .exit:
-	mov al, [.BufferBelowMB]
-	mov [ds:si], al
-	mov al, [.BufferOverMB]
-	mov [es:di], al
-	shr ax, 8					;	move result from ah to al register and clear ah
-	sti
-	pop es
-	pop ds
+	mov al, [.BufferBelowMB]		; stock la valeur de .BufferBelowMb dans al
+	mov [ds:si], al					; place la valeur de al à l'adresse 0x0000:0x0500
+	mov al, [.BufferOverMB]			; stock la valeur de .BufferOverMb dans al
+	mov [es:di], al					; place la valeur de al à l'adresse 0xFFFF:0x0510
+	shr ax, 8						; place le résultat de ah vers le registre al et clear ah
+	sti								; contraire de cli
+	pop es							; retirer de la pile et mettre dans es
+	pop ds							; etc
 	pop di
 	pop si
-	popf
-	ret
+	popf							; retirer les flags de la pile
+	ret								; return pour ne pas executerla suite
 	
 	.BufferBelowMB:	db 0
 	.BufferOverMB	db 0
