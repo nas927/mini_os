@@ -2,26 +2,36 @@
 bits 16
 org 0x7C00              ; Adresse mémoire où le BIOS charge le bootloader
 
+
 start:
     xor ax, ax          ; initialise à 0 registre de 16 bits l'objet d'un prochain post
+    mov ds, ax
 
-    mov si, message     ; Pointeur sur la chaîne à afficher
+    mov ax, 65535
+    call print_number
 
-.print_char:
-    lodsb               ; Charge un octet depuis [SI] dans AL, SI++ on stock donc dans al comme argument de la fonction 0x0E
-    cmp al, 0           ; compare le contenu de al avec 0   
-    je .done            ; Fin de chaîne si caractère nul
+    call load_sector_2
 
-    mov ah, 0x0E        ; Fonction "afficher un caractère" du BIOS : https://wiki.osdev.org/index.php?search=0x0e&title=Special%3ASearch&go=Go
-    int 0x10            ; Appel BIOS ici https://wiki.osdev.org/BIOS
+    in al, 0x92
+    or al, 2
+    out 0x92, al
 
-    jmp .print_char     ; jmp sauter/aller vers .print_char
+    call get_a20_state
+    call print_number
 
-.done:
-    hlt                 ; Boucle ici après affichage (évite de faire n'importe quoi)
+    jmp done
+
+done:
+    hlt
     jmp $               ; $ stock l'adresse du début
 
-message db "Bonjour linkedin!", 0
+
+message db "yoo", 0dh, 0ah, 0     ; 0 à la fin va servir à comprendre qu'on est en fin de chaine sinon il va lire plus loin dans la mémoire 
+error_file db "fichier non trouve !", 0
+
+%include "utils.nasm"
+%include "disk.nasm"
+%include "protect_mode.nasm"
 
 ; Remplissage jusqu'à 510 octets
 times 510 - ($ - $$) db 0
